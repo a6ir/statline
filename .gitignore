@@ -1,0 +1,26 @@
+# datasets
+*.csv
+!examples/*.csv
+!examples/*.parquet
+
+# build
+target/
+**/*.rs.bk
+*.pdb
+
+# temp
+*.log
+*.tmp
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
