@@ -37,8 +37,26 @@ Build from source:
 ```bash
 git clone https://github.com/a6ir/statline
 cd statline
-cargo build --release
+./scripts/build.sh
 ./target/release/statline examples/Employee.csv
+```
+
+Build with a clean target directory:
+
+```bash
+./scripts/build.sh --clean
+```
+
+The build script runs a release build and prints:
+
+- The binary output path
+- Binary size
+- Total build time
+
+Install to your system (Linux helper script):
+
+```bash
+./scripts/install.sh
 ```
 
 ## Example Output
