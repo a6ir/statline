@@ -1,149 +1,109 @@
 # statline
 
-> Profile CSV datasets from the terminal and get column stats, nulls, uniques, and type insights without opening a notebook.
+Fast CLI-first dataset profiling for CSV and Parquet, built with Rust + Polars.
+
+`statline` gives you table summaries, insights, correlation, JSON output, and charting (terminal + PNG + HTML) without opening a notebook.
 
 ## Features
 
-- CSV profiling from a single CLI command
-- Parquet scan path for `.parquet` / `.pq` files
-- Per-column summary: type, count, null count, null %, mean, min, max
-- Full numeric stats: standard deviation, P25, P50, P75
-- Unique counts for datasets up to 5,000,000 rows
-- Heuristic column insights: `Identifier`, `Numeric`, `Categorical`, `Boolean/Categorical`, `Text`
-- JSON output for scripts and CI checks
-- Row sampling with `--sample <N>`
-- Polars LazyFrame input scanning
+- CSV and Parquet (`.parquet`, `.pq`) support
+- Column profiling: dtype, count, nulls, null %, mean/std/min/max, percentiles
+- Correlation matrix (`--corr`) for numeric columns
+- Heuristic column insights (`Identifier`, `Numeric`, `Categorical`, etc.)
+- JSON output (`--json`) for scripts/CI
+- Sampling (`--sample <N>`)
+- Static chart export with Plotters (PNG assets)
+- Minimal standalone HTML report export
+- Inline terminal charts (text/Unicode bars, histograms, distributions)
 
 ## Quick Start
 
 ```bash
-cargo run -- examples/Employee.csv
+cargo run -- examples/Employee.csv --full --corr
 ```
 
+With chart export + HTML:
+
 ```bash
-cargo run -- examples/Employee.csv --full --no-color
+cargo run -- examples/Employee.csv --full --corr --charts --html report/index.html
+```
+
+## Visuals
+
+### 1) Inline terminal charts
+
+Terminal charts are shown in full output mode (default enabled via `--terminal-charts`):
+
+```bash
+statline examples/Employee.csv --full --corr --terminal-charts
+```
+
+Example excerpt:
+
+```text
+Terminal Charts:
+Numeric Distribution: Salary_USD
+trend: ▁▃▆█▆▅▂▁
+45912-59083   ███████
+59083-72254   █████████████
+72254-85425   █████████████████
+...
+
+Department
+Management      ███████████████ 18.6%
+Product         ██████████████  17.4%
+Software        ██████████████  17.2%
+```
+
+### 2) Exported PNG charts
+
+Generated with:
+
+```bash
+statline examples/Employee.csv --full --corr --charts
+```
+
+Assets are written to `report/assets/` by default:
+
+- `*_histogram.png`
+- `*_distribution.png`
+- `nulls.png`
+- `correlation_heatmap.png`
+
+### 3) Standalone HTML report
+
+```bash
+statline examples/Employee.csv --full --corr --charts --html report/index.html
+```
+
+Default output layout:
+
+```text
+report/
+├── index.html
+└── assets/
+    ├── Age_histogram.png
+    ├── Department_distribution.png
+    ├── nulls.png
+    └── correlation_heatmap.png
 ```
 
 ## Installation
 
-Install from the Git repository:
+Install from Git:
 
 ```bash
 cargo install --git https://github.com/a6ir/statline
 ```
 
-Build from source:
+Build locally:
 
 ```bash
 git clone https://github.com/a6ir/statline
 cd statline
 ./scripts/build.sh
-./target/release/statline examples/Employee.csv
+./target/release/statline examples/Employee.csv --full
 ```
-
-Build with a clean target directory:
-
-```bash
-./scripts/build.sh --clean
-```
-
-The build script runs a release build and prints:
-
-- The binary output path
-- Binary size
-- Total build time
-
-Install to your system (Linux helper script):
-
-```bash
-./scripts/install.sh
-```
-
-## Example Output
-
-Command:
-
-```bash
-statline examples/Employee.csv --full --no-color
-```
-
-Output excerpt from the checked-in `examples/Employee.csv` fixture:
-
-```text
-Rows: 1000
-Columns: 10
-
-Column Summary:
-╭───────────────────┬───────┬───────┬───────┬───────┬──────────┬──────────┬──────────┬──────────┬──────────┬───────────┬───────────┬────────╮
-│ Column            ┆ DType ┆ Count ┆ Nulls ┆ Null% ┆ Mean     ┆ Std      ┆ Min      ┆ P25      ┆ P50      ┆ P75       ┆ Max       ┆ Unique │
-╞═══════════════════╪═══════╪═══════╪═══════╪═══════╪══════════╪══════════╪══════════╪══════════╪══════════╪═══════════╪═══════════╪════════╡
-│ Employee_ID       ┆ i64   ┆ 1000  ┆ 0     ┆ 0.00  ┆ 500.50   ┆ 288.82   ┆ 1.00     ┆ 250.75   ┆ 500.50   ┆ 750.25    ┆ 1000.00   ┆ 1000   │
-│ Age               ┆ i64   ┆ 1000  ┆ 0     ┆ 0.00  ┆ 39.97    ┆ 11.03    ┆ 22.00    ┆ 30.00    ┆ 40.00    ┆ 49.00     ┆ 59.00     ┆ 38     │
-│ Salary_USD        ┆ i64   ┆ 1000  ┆ 0     ┆ 0.00  ┆ 91975.44 ┆ 24843.98 ┆ 45912.00 ┆ 72453.00 ┆ 88191.00 ┆ 111767.75 ┆ 151281.00 ┆ 996    │
-│ Performance_Score ┆ f64   ┆ 1000  ┆ 0     ┆ 0.00  ┆ 8.27     ┆ 1.01     ┆ 6.50     ┆ 7.41     ┆ 8.25     ┆ 9.16      ┆ 10.00     ┆ 335    │
-╰───────────────────┴───────┴───────┴───────┴───────┴──────────┴──────────┴──────────┴──────────┴──────────┴───────────┴───────────┴────────╯
-
-Column Insights:
-  • Employee_ID: Identifier
-  • Name: Text
-  • Age: Numeric
-  • Gender: Boolean/Categorical
-  • Department: Categorical
-  • Experience_Years: Numeric
-  • Salary_USD: Numeric
-  • Remote_Work: Boolean/Categorical
-  • Performance_Score: Numeric
-  • City: Categorical
-```
-
-JSON output is available with:
-
-```bash
-statline examples/Employee.csv --sample 5 --json
-```
-
-## Performance
-
-Criterion artifacts in this repository benchmark CSV profiling on generated data with columns `id,value,group`.
-
-| Rows | Mean |
-|---:|---:|
-| 10,000 | 4.67 ms |
-| 50,000 | 7.36 ms |
-| 100,000 | 10.64 ms |
-| 1,000,000 | ~70 ms extrapolated, not measured |
-
-The benchmark includes dataset scanning and profiling. The 1M value is a linear extrapolation from the committed 10k-100k Criterion results, not a committed benchmark artifact.
-
-Run benchmarks locally:
-
-```bash
-cargo bench
-```
-
-## How It Works
-
-- `statline` validates the input path and detects format by extension.
-- CSV files are scanned with `LazyCsvReader`.
-- Parquet files are scanned with `LazyFrame::scan_parquet`.
-- `--sample <N>` applies a lazy `limit(N)` before profiling.
-- Row count is computed with a lazy `len()` projection.
-- Column profiles are built from a collected DataFrame.
-- Numeric aggregations are planned through Polars expressions.
-- Output is rendered as a terminal table or serialized as pretty JSON.
-
-Data flow:
-
-```text
-scan CSV/Parquet -> optional sample -> row count -> column profiles -> insights -> table/JSON
-```
-
-Why use this instead of `pandas.describe()` or `polars.describe()`?
-
-- It is CLI-first: useful in shells, CI jobs, Makefiles, and data handoff workflows.
-- It needs no notebook, Python script, or dataframe setup.
-- It includes nulls, uniques, and simple semantic column labels in one pass.
-- It is built on Polars, so startup-to-summary time stays low for everyday datasets.
 
 ## CLI Options
 
@@ -153,50 +113,94 @@ Usage: statline [OPTIONS] <INPUT>
 
 | Option | Description |
 |---|---|
-| `<INPUT>` | Input dataset path: `.csv`, `.parquet`, or `.pq` |
-| `--full` | Show std, percentiles, unique counts, and insights |
+| `<INPUT>` | Input dataset path (`.csv`, `.parquet`, `.pq`) |
+| `--full` | Show full profile table + insights (+ terminal charts) |
 | `--json` | Emit pretty JSON |
-| `--sample <N>` | Profile only the first `N` rows |
-| `--no-color` | Disable ANSI colors in table output |
+| `--sample <N>` | Profile first `N` rows |
+| `--no-color` | Disable ANSI table colors |
 | `--no-insights` | Disable heuristic insights |
-| `--corr` | Accepted by the CLI; correlation is currently wired but not implemented |
+| `--corr` | Compute numeric correlation matrix |
+| `--charts` | Generate PNG chart assets |
+| `--chart-dir <DIR>` | Directory for chart assets (default: `report/assets`) |
+| `--html <FILE>` | Generate standalone HTML report file |
+| `--terminal-charts` | Enable inline terminal charts |
+| `--no-terminal-charts` | Disable inline terminal charts |
 | `-h`, `--help` | Print help |
 | `-V`, `--version` | Print version |
 
+## Example Commands
+
+Basic table profile:
+
+```bash
+statline examples/Employee.csv
+```
+
+Full profile + correlation:
+
+```bash
+statline examples/Employee.csv --full --corr
+```
+
+JSON for automation:
+
+```bash
+statline examples/Employee.csv --sample 1000 --json
+```
+
+PNG charts only:
+
+```bash
+statline examples/Employee.csv --full --corr --charts
+```
+
+Disable terminal charts:
+
+```bash
+statline examples/Employee.csv --full --no-terminal-charts
+```
+
+## How It Works
+
+Data flow:
+
+```text
+Input scan (CSV/Parquet)
+  -> optional sampling
+  -> profiler engine
+  -> ProfileReport
+  -> output table/json
+  -> optional visualization export (PNG / HTML)
+  -> optional terminal chart rendering (full mode)
+```
+
+Design principles:
+
+- CLI-first, no GUI/web runtime
+- Uses Polars lazy scanning for performance
+- Keeps profiling and visualization layers separate
+
 ## Insights
 
-Insights are simple labels derived from dtype and unique count:
+Insights are heuristic labels derived from dtype + simple cardinality patterns:
 
-| Insight | Meaning |
-|---|---|
-| `Identifier` | Numeric column with unique values for every row |
-| `Numeric` | Numeric column that is not classified as an identifier |
-| `Boolean/Categorical` | String column with exactly 2 unique values |
-| `Categorical` | String column with fewer than 20 unique values |
-| `Text` | String column with 20 or more unique values |
-| `Unknown` | Any dtype without a current rule |
+- `Identifier`
+- `Numeric`
+- `Boolean/Categorical`
+- `Categorical`
+- `Text`
+- `Unknown`
 
-## Roadmap
+## Dev
 
-- Implement real numeric correlation output for `--corr`
-- Fix the current Parquet profiling issue exposed by `examples/dataset.parquet`
-- Add tests for CLI output, JSON schema, sampling, and unsupported formats
-- Add committed 1M-row benchmark artifacts
-- Improve insight rules for semantic IDs, dates, and numeric-looking strings
-
-## Contributing
-
-Contributions are welcome.
-
-Useful checks before opening a PR:
+Useful checks:
 
 ```bash
 cargo fmt
+cargo check
 cargo test
 cargo bench
 ```
-
-Keep changes focused and include an example or test when behavior changes.
 
 ## License
 
