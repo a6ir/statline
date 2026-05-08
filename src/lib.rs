@@ -3,3 +3,4 @@ pub mod error;
 pub mod io;
 pub mod output;
 pub mod profiler;
+pub mod visualization;

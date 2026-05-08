@@ -24,3 +24,6 @@ target/
 *.swp
 *.swo
 *~
+report/
+report/assets/*.png
+report/index.html

@@ -2,12 +2,21 @@ use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table};
 
+use polars::prelude::DataFrame;
+
 use crate::error::Result;
 use crate::profiler::{CorrelationMatrix, ProfileReport};
+use crate::visualization::terminal;
 
 const NAME_MAX_WIDTH: usize = 20;
 
-pub fn print_table(report: &ProfileReport, color: bool, full: bool) {
+pub fn print_table(
+    report: &ProfileReport,
+    chart_df: Option<&DataFrame>,
+    color: bool,
+    full: bool,
+    terminal_charts: bool,
+) {
     print_dataset_header(report);
 
     if full {
@@ -17,16 +26,22 @@ pub fn print_table(report: &ProfileReport, color: bool, full: bool) {
     }
 
     if full {
-        if let Some(corr) = &report.correlation {
-            print_correlation_table(corr, color);
-        }
-
         // Column Insights (clean + minimal)
         if !report.column_insights.is_empty() {
             println!("\nColumn Insights:");
             for insight in &report.column_insights {
                 println!("  • {}: {}", insight.column, insight.classification);
             }
+        }
+
+        if terminal_charts {
+            if let Some(rendered) = terminal::render_terminal_charts(report, chart_df) {
+                println!("{rendered}");
+            }
+        }
+
+        if let Some(corr) = &report.correlation {
+            print_correlation_table(corr, color);
         }
     } else {
         println!("\nTip: use --full for detailed statistics");

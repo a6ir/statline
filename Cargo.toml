@@ -18,6 +18,7 @@ polars = { version = "0.46", default-features = false, features = [
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+plotters = { version = "0.3.7", default-features = false, features = ["bitmap_backend", "bitmap_encoder", "ttf", "fontconfig-dlopen"] }
 
 [dev-dependencies]
 criterion = "0.5"
