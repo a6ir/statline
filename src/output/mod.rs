@@ -178,9 +178,9 @@ fn fmt_opt_u64(value: Option<u64>) -> String {
 }
 
 fn hcell(text: &str, color: bool) -> Cell {
-    let cell = Cell::new(text).add_attribute(Attribute::Bold);
+    let cell = Cell::new(text);
     if color {
-        cell.fg(Color::Cyan)
+        cell.add_attribute(Attribute::Bold).fg(Color::Cyan)
     } else {
         cell
     }
